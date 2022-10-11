@@ -32,9 +32,9 @@ namespace EmotionFerPlusLib
         }
 
 
-//===============================Функция распознавания эмоций====================
-        public async Task<List<Tuple<string, float>>> Recognition_func
-                (DenseTensor<float> input, CancellationToken token)
+        //===============================Функция распознавания эмоций====================
+        public async Task<List<(string, float)>> Recognition_func
+                       (DenseTensor<float> input, CancellationToken token)
         {
             //Проверка на удаление сессии(чистка памяти)
             if (_session_dispose)
@@ -43,7 +43,7 @@ namespace EmotionFerPlusLib
             }
             //Проверка на внешнее прерывание
             token.ThrowIfCancellationRequested();
-            return await Task<List<Tuple<string, float>>>.Factory.StartNew(() =>
+            return await Task<List<(string, float)>>.Factory.StartNew(() =>
             {
                 //Проверка на внешнее прерывание
                 token.ThrowIfCancellationRequested();
@@ -65,12 +65,7 @@ namespace EmotionFerPlusLib
                 List<Tuple<string, float>> result = new();
                 string[] keys = { "neutral", "happiness", "surprise", "sadness",
                         "anger", "disgust", "fear", "contempt" };
-                foreach (var i in keys.Zip(emotions))
-                {
-                    result.Add(Tuple.Create(i.First, i.Second));
-                }
-                return result;
-
+                return keys.Zip(emotions).Select(e => (e.First, e.Second)).ToList();
             }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
