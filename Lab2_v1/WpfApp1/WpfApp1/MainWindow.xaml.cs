@@ -170,11 +170,7 @@ namespace WpfApp1
                     };
                     MyCollection.MyList.Add(data_tmp);
                     MyCollection.progress += 100.0 / images_list.Count();
-
-
-                    //
                     MyCollection_sort.progress += 100.0 / images_list.Count();
-                    //
                 }
 
                 catch (OperationCanceledException e1)
@@ -185,8 +181,6 @@ namespace WpfApp1
             }
 
             //Сортировка изображений по убыванию по выбранной эмоции
-            //Не работает - пачки эмоций изображений формируются в правильном порядке,
-            //имена файлов - в старом, как до сортировки(то есть имя не соответствует набору эмоций)
             string mode = selected_mode;
             MyCollection.quicksort(0, MyCollection.MyList.Count() - 1, mode);
             foreach (var im in MyCollection.MyList)
@@ -230,16 +224,6 @@ namespace WpfApp1
             MyCollection.maxValue = 100;
         }
 
-        /*
-        private void ComboBox_Selected(object sender, RoutedEventArgs e)
-        {
-            if (calculation_status)
-            {
-                MyCollection.quicksort(0, MyCollection.MyList.Count() - 1, selected_mode);//отсортирован
-                //MessageBox.Show("Вычисления прерваны.");
-            }
-        }
-        */
 
         //преобразование изображения в тензор
         public DenseTensor<float> GrayscaleImageToTensor(Image<Rgb24> img)
