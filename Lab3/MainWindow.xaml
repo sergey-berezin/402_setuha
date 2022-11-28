@@ -39,7 +39,7 @@
 
 
         <Button Click="Open_Storage_Click" Width="120" Grid.Column="1" Grid.Row="2" 
-                Height="40">Open Вatabase</Button>
+                Height="40">Open Database</Button>
         
         <ListBox ItemsSource="{Binding MyCollection.MyList}"  Grid.Column="2" Grid.Row="1">
             <ListBox.ItemTemplate>

@@ -9,9 +9,6 @@ using SixLabors.ImageSharp;
 using Microsoft.ML.OnnxRuntime.Tensors;
 using SixLabors.ImageSharp.Processing;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
-using System.Collections;
-using System.Collections.ObjectModel;
 
 namespace WPFDataBase
 {
@@ -96,62 +93,90 @@ namespace WPFDataBase
                     using (var db = new ImageContext())
                     {
                         string hash = Image.GetHashCode(System.IO.File.ReadAllBytes(images_path[i]));
-                        var q = db.Images.Where(x => x.Image_Hash == hash)//если хэш не совпал, содержимое картинки не подругажется
+                        
+                        var q = db.Images.Where(x => Equals(x.Image_Hash, hash))//если хэш не совпал, содержимое картинки не подругажется
                             .Include(x => x.Content)
-                            .Where(x => Equals(x.Content.Image_Data, System.IO.File.ReadAllBytes(images_path[i])));
+                            .Where(x => Equals(x.Content.Image_Data, System.IO.File.ReadAllBytes(images_path[i])))
+                            .Include(x => x.Emotions);
+
                         if (q.Any())
                         {
                             New_im = q.First();
                         }
-                    }
 
-                    //Если не нашли ее в БД, то делаем вычисления и сохраняем
-                    if (New_im == null)
-                    {
-                        images_list[i].Mutate(ctx => {
-                            ctx.Resize(new SixLabors.ImageSharp.Size(64, 64));
-                        });
-                        DenseTensor<float> image_tensor = GrayscaleImageToTensor(images_list[i]);
-                        token = token_source.Token;
-                        var r = await obj1.Recognition_func(image_tensor, token);//получение эмоций
-                        var res = r.OrderByDescending(t => t.Item2).ToList();
-
-                        Data data_tmp = new Data
+                        //Если нашли изображение в БД -> вычисления не делаем
+                        if (New_im != null)
                         {
-                            image_name = images_path[i],
-                            emotions = res.Select(t => new Tuple<string, float>(t.Item1, t.Item2)).ToList()
-                        };
-                        MyCollection.MyList.Add(data_tmp);
-                        MyCollection.progress += 100.0 / images_list.Count();
-
-                        //Сохранение в БД
-                        using (var db = new ImageContext())
-                        {
-                            var newImageContent = new ImageContent{ 
-                                Image_Data = System.IO.File.ReadAllBytes(images_path[i])
+                            Data data_tmp = new Data
+                            {
+                                image_name = images_path[i],
+                                emotions = New_im.Emotions
+                                        .Select(t => new Tuple<string, float>(t.emotion_name, t.emotion_val))
+                                        .ToList()
                             };
+                            MyCollection.MyList.Add(data_tmp);
+                            MyCollection.progress += 100.0 / images_list.Count();
+                        }
+
+                        //Если не нашли ее в БД, то делаем вычисления и сохраняем
+                        if (New_im == null)
+                        {
+                            images_list[i].Mutate(ctx => {
+                                ctx.Resize(new SixLabors.ImageSharp.Size(64, 64));
+                            });
+                            DenseTensor<float> image_tensor = GrayscaleImageToTensor(images_list[i]);
+                            token = token_source.Token;
+                            var r = await obj1.Recognition_func(image_tensor, token);//получение эмоций
+                            var res = r.OrderByDescending(t => t.Item2).ToList();
+
+                            Data data_tmp = new Data
+                            {
+                                image_name = images_path[i],
+                                emotions = res.Select(t => new Tuple<string, float>(t.Item1, t.Item2)).ToList()
+                            };
+                            MyCollection.MyList.Add(data_tmp);
+                            MyCollection.progress += 100.0 / images_list.Count();
+
+
+
+                            //Сохранение в БД, атомарное
+                            SemaphoreSlim smp = new SemaphoreSlim(1, 1);
+                            await smp.WaitAsync();
 
                             Image newImage = new Image
                             {
                                 Image_Name = images_path[i],
                                 Image_Hash = Image.GetHashCode(System.IO.File.ReadAllBytes(images_path[i])),
-                                Content = newImageContent,
-                                Emotions = new ObservableCollection<Emotion>()
+                                Emotions = new List<Emotion>()
+                            };
+                            var newImageContent = new ImageContent
+                            {
+                                Image_Data = System.IO.File.ReadAllBytes(images_path[i]),
+                                im = newImage
                             };
 
+                            newImage.Content = newImageContent;
+
+                            string _emotions_in_one_string = "";
                             foreach (var item in res)
                             {
                                 Emotion new_emotion = new Emotion
                                 {
                                     emotion_name = item.Item1,
-                                    emotion_val = item.Item2
+                                    emotion_val = item.Item2,
+                                    im = newImage
                                 };
                                 newImage.Emotions.Add(new_emotion);
+                                _emotions_in_one_string += item.Item1 + ": " + 
+                                        item.Item2.ToString() + "\n";
                             }
+                            newImage.Emotions_in_one_string = _emotions_in_one_string;
+
+                           // MessageBox.Show(newImage.Emotions[0].emotion_name, );
                             db.Add(newImage);
                             db.SaveChanges();
+                            smp.Release();
                         }
-
                     }
                 }
 

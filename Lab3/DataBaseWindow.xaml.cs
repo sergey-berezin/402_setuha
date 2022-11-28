@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Windows;
-using System.Windows.Controls;
-using Microsoft.EntityFrameworkCore;
 
 namespace WPFDataBase
 {
@@ -31,26 +29,37 @@ namespace WPFDataBase
             DataContext = this;
         }
 
-     
 
-        private void Delete_Image_Click(object sender, RoutedEventArgs e)
+        //Атомарное удаление
+        private SemaphoreSlim smp = new SemaphoreSlim(1, 1);
+        private async void Delete_Image_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 var image = ImagesCollection[Images_Collection_ListBox.SelectedIndex];
+
+                if (image == null)
+                {
+                    return;
+                }
+
+                await smp.WaitAsync();
                 using (var db = new ImageContext())
                 {
-                    var deletedImage = db.Images.Where(x => x.Id == image.Id)
-                        .Include(x => x.Content).First();
+                    var deletedImage = db.Images.Where(x => Equals(x.ImageId, image.ImageId))
+                            .FirstOrDefault();
+
                     if (deletedImage == null)
                     {
                         return;
                     }
-                    db.Images_Content.Remove(deletedImage.Content);
+
+
                     db.Images.Remove(deletedImage);
                     db.SaveChanges();
                     ImagesCollection.Remove(image);
                 }
+                smp.Release();
             }
             catch (Exception e1)
             {

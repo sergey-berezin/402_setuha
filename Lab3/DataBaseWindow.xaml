@@ -21,7 +21,7 @@
                          <Label>
                             <Image Source="{Binding Image_Name}" Width="150" Height="150"/>
                         </Label>
-                        <ListBox ItemsSource="{Binding Emotions}" Width="300" Height="300"/>
+                        <Label Content="{Binding Emotions_in_one_string}"/>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
