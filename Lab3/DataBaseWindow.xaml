@@ -1,0 +1,39 @@
+﻿<Window x:Class="WPFDataBase.DataBaseWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WPFDataBase"
+        mc:Ignorable="d"
+        Title="DataBaseWindow" Height="450" Width="800">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="70"/>
+        </Grid.RowDefinitions>
+
+        <ListBox Name="Images_Collection_ListBox" ItemsSource="{Binding ImagesCollection}"  
+                     Grid.Column="0" Grid.Row="0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                         <Label>
+                            <Image Source="{Binding Image_Name}" Width="150" Height="150"/>
+                        </Label>
+                        <Label Content="{Binding Emotions_in_one_string}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+
+
+        <Button Name="Delete_Image" Click="Delete_Image_Click" Width="120" Height="40" Grid.Row="1" 
+                HorizontalAlignment="Left" Margin="28,15,0,15">Delete Image</Button>
+        <Button Name="Exit" IsCancel="True" Width="120" Height="40" Grid.Row="1" 
+                HorizontalAlignment="Left" Margin="650,15,0,15">Exit</Button>
+    </Grid>
+
+
+</Window>
